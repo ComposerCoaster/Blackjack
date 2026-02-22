@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Blackjack Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+
+<h1>Blackjack Simulator</h1>
+
+</header>
+
+<div id="table">
+    <h2>Dealer (<span id="dealerScore">0</span>)</h2>
+    <div id="dealerCards" class="cards"></div>
+
+    <h2>Spieler (<span id="playerScore">0</span>)</h2>
+    <div id="playerCards" class="cards"></div>
+
+    <p id="message"></p>
+    <p id="strategyFeedback"></p>
+
+    <div class="buttons">
+        <button onclick="playerAction('hit')">Hit</button>
+        <button onclick="playerAction('stand')">Stand</button>
+        <button onclick="playerAction('double')">Double</button>
+        <button onclick="newGame()">Neu</button>
+    </div>
+</div>
+
+<script>
+let deck = [];
+let player = [];
+let dealer = [];
+let gameOver = false;
+let canDouble = true;
+
+function createDeck() {
+    const suits = ["♠","♥","♦","♣"];
+    const values = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+    deck = [];
+    for (let s of suits) {
+        for (let v of values) {
+            deck.push({value: v, suit: s});
+        }
+    }
+}
+
+function shuffle() {
+    for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+}
+
+function dealCard(hand) {
+    hand.push(deck.pop());
+}
+
+function getCardValue(card) {
+    if (card.value === "A") return 11;
+    if (["K","Q","J"].includes(card.value)) return 10;
+    return parseInt(card.value);
+}
+
+function calculateScore(hand) {
+    let score = 0;
+    let aces = 0;
+
+    for (let card of hand) {
+        if (card.value === "A") {
+            aces++;
+            score += 11;
+        } else if (["K","Q","J"].includes(card.value)) {
+            score += 10;
+        } else {
+            score += parseInt(card.value);
+        }
+    }
+
+    while (score > 21 && aces > 0) {
+        score -= 10;
+        aces--;
+    }
+
+    return score;
+}
+
+function isSoft(hand) {
+    let score = 0;
+    let aces = 0;
+
+    for (let card of hand) {
+        if (card.value === "A") {
+            aces++;
+            score += 11;
+        } else if (["K","Q","J"].includes(card.value)) {
+            score += 10;
+        } else {
+            score += parseInt(card.value);
+        }
+    }
+
+    return aces > 0 && score <= 21;
+}
+
+function basicStrategyRecommendation() {
+    const playerScore = calculateScore(player);
+    const dealerUp = getCardValue(dealer[0]);
+    const soft = isSoft(player);
+
+    // harte Hände
+    if (!soft) {
+        if (playerScore >= 17) return "stand";
+        if (playerScore >= 13 && playerScore <= 16)
+            return dealerUp <= 6 ? "stand" : "hit";
+        if (playerScore === 12)
+            return (dealerUp >= 4 && dealerUp <= 6) ? "stand" : "hit";
+        if (playerScore === 11) return "double";
+        if (playerScore === 10)
+            return dealerUp <= 9 ? "double" : "hit";
+        if (playerScore === 9)
+            return (dealerUp >= 3 && dealerUp <= 6) ? "double" : "hit";
+        return "hit";
+    }
+
+    // weiche Hände
+    if (playerScore >= 19) return "stand";
+    if (playerScore === 18) {
+        if (dealerUp >= 3 && dealerUp <= 6) return "double";
+        if (dealerUp >= 9) return "hit";
+        return "stand";
+    }
+    if (playerScore <= 17) {
+        if (dealerUp >= 4 && dealerUp <= 6) return "double";
+        return "hit";
+    }
+
+    return "hit";
+}
+
+function giveStrategyFeedback(action) {
+    const recommendation = basicStrategyRecommendation();
+    const feedback = document.getElementById("strategyFeedback");
+
+    if (action === recommendation) {
+        feedback.textContent = "Basic Strategy: korrekt";
+    } else {
+        feedback.textContent = "Basic Strategy empfiehlt: " + recommendation.toUpperCase();
+    }
+}
+
+function render() {
+    const playerDiv = document.getElementById("playerCards");
+    const dealerDiv = document.getElementById("dealerCards");
+
+    playerDiv.innerHTML = "";
+    dealerDiv.innerHTML = "";
+
+    player.forEach(c => {
+        playerDiv.innerHTML += `<span class="card">${c.value}${c.suit}</span>`;
+    });
+
+    dealer.forEach((c,i) => {
+        if (i === 1 && !gameOver) {
+            dealerDiv.innerHTML += `<span class="hidden">?</span>`;
+        } else {
+            dealerDiv.innerHTML += `<span class="card">${c.value}${c.suit}</span>`;
+        }
+    });
+
+    document.getElementById("playerScore").textContent = calculateScore(player);
+    document.getElementById("dealerScore").textContent = gameOver ? calculateScore(dealer) : "?";
+}
+
+function playerAction(action) {
+    if (gameOver) return;
+
+    giveStrategyFeedback(action);
+
+    if (action === "hit") {
+        dealCard(player);
+        canDouble = false;
+        if (calculateScore(player) > 21) checkWinner();
+    }
+
+    if (action === "stand") {
+        gameOver = true;
+        while (calculateScore(dealer) < 17) {
+            dealCard(dealer);
+        }
+        checkWinner();
+    }
+
+    if (action === "double" && canDouble) {
+        dealCard(player);
+        gameOver = true;
+        while (calculateScore(dealer) < 17) {
+            dealCard(dealer);
+        }
+        checkWinner();
+    }
+
+    render();
+}
+
+function checkWinner() {
+    const p = calculateScore(player);
+    const d = calculateScore(dealer);
+
+    if (p > 21) {
+        document.getElementById("message").textContent = "Du hast überkauft.";
+    } else if (d > 21) {
+        document.getElementById("message").textContent = "Dealer überkauft.";
+    } else if (p > d) {
+        document.getElementById("message").textContent = "Du gewinnst!";
+    } else if (p < d) {
+        document.getElementById("message").textContent = "Dealer gewinnt.";
+    } else {
+        document.getElementById("message").textContent = "Unentschieden.";
+    }
+}
+
+function newGame() {
+    createDeck();
+    shuffle();
+    player = [];
+    dealer = [];
+    gameOver = false;
+    canDouble = true;
+    document.getElementById("message").textContent = "";
+    document.getElementById("strategyFeedback").textContent = "";
+
+    dealCard(player);
+    dealCard(dealer);
+    dealCard(player);
+    dealCard(dealer);
+
+    render();
+}
+
+newGame();
+</script>
+
+</body>
+</html>

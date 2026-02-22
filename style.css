@@ -1,0 +1,68 @@
+body {
+    font-family: helvetica, sans-serif;
+   background-image: url("https://w0.peakpx.com/wallpaper/577/287/HD-wallpaper-blackjack-gambling-poker-21-chips-poker-chips.jpg");
+    background-size: 100%;
+	color: white;
+    text-align: center;
+}
+h1{
+	font-size: 48pt;
+	font-family: times new roman, sans serif;
+}
+
+#table {
+    background: #D10000;
+	border: 5px solid #A30000; 
+    padding: 32px;
+    border-radius: 16px;
+    display: inline-block;
+    margin-top: 20px;
+}
+
+.cards {
+    margin: 10px;
+}
+
+.card {
+    background: white;
+    color: black;
+    padding: 6px 10px;
+    margin: 3px;
+    border-radius: 6px;
+    display: inline-block;
+    font-weight: bold;
+}
+
+.hidden {
+    background: #222;
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+
+button {
+    padding: 10px 15px;
+    margin: 5px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+.buttons {
+    margin-top: 10px;
+}
+
+header{
+	backdrop-filter: blur(10px);
+	border: 1px solid white;
+	padding:32px;
+	margin-top: 40px;
+	margin-bottom: 30px;
+	margin-left: 320px;
+	margin-right: 320px;
+	border-radius: 16px;
+}

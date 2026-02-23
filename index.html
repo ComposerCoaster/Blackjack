@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <title>Blackjack Simulator</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Blackjack Simulator</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header>
-
 <h1>Blackjack Simulator</h1>
-
 </header>
 
-<div id="table">
+<main id="table">
+    <h2 id="betPrompt">Was setzen Sie?</h2>
+
     <h2>Dealer (<span id="dealerScore">0</span>)</h2>
     <div id="dealerCards" class="cards"></div>
 
@@ -24,40 +24,58 @@
     <p id="strategyFeedback"></p>
 
     <div class="buttons">
-        <button onclick="playerAction('hit')">Hit</button>
-        <button onclick="playerAction('stand')">Stand</button>
-        <button onclick="playerAction('double')">Double</button>
-        <button onclick="newGame()">Neu</button>
+        <button type="button" onclick="playerAction('hit')" disabled>Hit</button>
+        <button type="button" onclick="playerAction('stand')" disabled>Stand</button>
+        <button type="button" onclick="playerAction('double')" disabled>Double</button>
     </div>
-</div>
+</main>
+
+<aside id="bettingArea">
+    <h3>Kontostand: <span id="balance">1000</span> €</h3>
+    <p>Geplanter Einsatz: <span id="pendingBet">0</span> €</p>
+    <button type="button" onclick="addBet(50)">+50 €</button>
+    <button type="button" onclick="addBet(100)">+100 €</button>
+    <button id="frrr" type="button" onclick="allIn()">All-In</button>
+    <button type="button" onclick="confirmBet()">Bestätigen</button>
+</aside>
 
 <script>
-let deck = [];
-let player = [];
-let dealer = [];
-let gameOver = false;
-let canDouble = true;
+const gameState = {
+    deck: [],
+    player: [],
+    dealer: [],
+    gameOver: true,
+    canDouble: true,
+    balance: 1000,
+    currentBet: 0,
+    pendingBet: 0
+};
 
+/* ===== Deck ===== */
 function createDeck() {
     const suits = ["♠","♥","♦","♣"];
     const values = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-    deck = [];
+    gameState.deck = [];
     for (let s of suits) {
         for (let v of values) {
-            deck.push({value: v, suit: s});
+            gameState.deck.push({value: v, suit: s});
         }
     }
 }
 
 function shuffle() {
-    for (let i = deck.length - 1; i > 0; i--) {
+    for (let i = gameState.deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
+        [gameState.deck[i], gameState.deck[j]] = [gameState.deck[j], gameState.deck[i]];
     }
 }
 
 function dealCard(hand) {
-    hand.push(deck.pop());
+    if (gameState.deck.length === 0) {
+        createDeck();
+        shuffle();
+    }
+    hand.push(gameState.deck.pop());
 }
 
 function getCardValue(card) {
@@ -69,7 +87,6 @@ function getCardValue(card) {
 function calculateScore(hand) {
     let score = 0;
     let aces = 0;
-
     for (let card of hand) {
         if (card.value === "A") {
             aces++;
@@ -80,19 +97,16 @@ function calculateScore(hand) {
             score += parseInt(card.value);
         }
     }
-
     while (score > 21 && aces > 0) {
         score -= 10;
         aces--;
     }
-
     return score;
 }
 
 function isSoft(hand) {
     let score = 0;
     let aces = 0;
-
     for (let card of hand) {
         if (card.value === "A") {
             aces++;
@@ -103,16 +117,19 @@ function isSoft(hand) {
             score += parseInt(card.value);
         }
     }
-
     return aces > 0 && score <= 21;
 }
 
-function basicStrategyRecommendation() {
-    const playerScore = calculateScore(player);
-    const dealerUp = getCardValue(dealer[0]);
-    const soft = isSoft(player);
+function isBlackjack(hand) {
+    return hand.length === 2 && calculateScore(hand) === 21;
+}
 
-    // harte Hände
+/* ===== Basic Strategy ===== */
+function basicStrategyRecommendation() {
+    const playerScore = calculateScore(gameState.player);
+    const dealerUp = getCardValue(gameState.dealer[0]);
+    const soft = isSoft(gameState.player);
+
     if (!soft) {
         if (playerScore >= 17) return "stand";
         if (playerScore >= 13 && playerScore <= 16)
@@ -126,8 +143,6 @@ function basicStrategyRecommendation() {
             return (dealerUp >= 3 && dealerUp <= 6) ? "double" : "hit";
         return "hit";
     }
-
-    // weiche Hände
     if (playerScore >= 19) return "stand";
     if (playerScore === 18) {
         if (dealerUp >= 3 && dealerUp <= 6) return "double";
@@ -138,111 +153,159 @@ function basicStrategyRecommendation() {
         if (dealerUp >= 4 && dealerUp <= 6) return "double";
         return "hit";
     }
-
     return "hit";
 }
 
 function giveStrategyFeedback(action) {
     const recommendation = basicStrategyRecommendation();
     const feedback = document.getElementById("strategyFeedback");
-
-    if (action === recommendation) {
-        feedback.textContent = "Basic Strategy: korrekt";
-    } else {
-        feedback.textContent = "Basic Strategy empfiehlt: " + recommendation.toUpperCase();
-    }
+    feedback.textContent = action === recommendation ? 
+        "Basic Strategy: korrekt" : 
+        "Basic Strategy empfiehlt: " + recommendation.toUpperCase();
 }
 
+/* ===== Betting ===== */
+function addBet(amount) {
+    if (!gameState.gameOver) return;
+    if (gameState.pendingBet + amount > gameState.balance) return;
+    gameState.pendingBet += amount;
+    document.getElementById("pendingBet").textContent = gameState.pendingBet;
+}
+
+function allIn() {
+    if (!gameState.gameOver) return;
+    gameState.pendingBet = gameState.balance;
+    document.getElementById("pendingBet").textContent = gameState.pendingBet;
+}
+
+function confirmBet() {
+    if (!gameState.gameOver || gameState.pendingBet <= 0) return;
+    gameState.currentBet = gameState.pendingBet;
+    gameState.balance -= gameState.currentBet;
+    gameState.pendingBet = 0;
+    updateBalance();
+    document.getElementById("pendingBet").textContent = "0";
+    startRound();
+}
+
+/* ===== Game Flow ===== */
+function startRound() {
+    createDeck();
+    shuffle();
+    gameState.player = [];
+    gameState.dealer = [];
+    gameState.gameOver = false;
+    gameState.canDouble = true;
+
+    document.getElementById("message").textContent = "";
+    document.getElementById("strategyFeedback").textContent = "";
+    document.getElementById("betPrompt").textContent = "Einsatz: " + gameState.currentBet + " €";
+
+    dealCard(gameState.player);
+    dealCard(gameState.dealer);
+    dealCard(gameState.player);
+    dealCard(gameState.dealer);
+
+    enableActionButtons(true);
+    render();
+
+    if (isBlackjack(gameState.player) || isBlackjack(gameState.dealer)) finishRound();
+}
+
+function enableActionButtons(state) {
+    const buttons = document.querySelectorAll(".buttons button");
+    buttons.forEach(btn => {
+        if (btn.textContent.toLowerCase() === "double") {
+            btn.disabled = !state || !gameState.canDouble;
+        } else {
+            btn.disabled = !state;
+        }
+    });
+}
+
+function playerAction(action) {
+    if (gameState.gameOver) return;
+    giveStrategyFeedback(action);
+
+    if (action === "hit") {
+        dealCard(gameState.player);
+        gameState.canDouble = false;
+        enableActionButtons(true);
+        if (calculateScore(gameState.player) > 21) finishRound();
+    }
+
+    if (action === "stand") finishRound();
+
+    if (action === "double" && gameState.canDouble) {
+        if (gameState.balance >= gameState.currentBet) {
+            gameState.balance -= gameState.currentBet;
+            gameState.currentBet *= 2;
+            updateBalance();
+            dealCard(gameState.player);
+            gameState.canDouble = false;
+            enableActionButtons(true);
+        }
+        finishRound();
+    }
+    render();
+}
+
+function finishRound() {
+    gameState.gameOver = true;
+    while (calculateScore(gameState.dealer) < 17) dealCard(gameState.dealer);
+    checkWinner();
+    enableActionButtons(false);
+}
+
+function checkWinner() {
+    const p = calculateScore(gameState.player);
+    const d = calculateScore(gameState.dealer);
+    const playerBJ = isBlackjack(gameState.player);
+    const dealerBJ = isBlackjack(gameState.dealer);
+    let message = "";
+
+    if (playerBJ && !dealerBJ) {
+        message = "Blackjack! Auszahlung 3:2";
+        gameState.balance += gameState.currentBet * 2.5;
+    } else if (!playerBJ && dealerBJ) {
+        message = "Dealer hat Blackjack.";
+    } else if (playerBJ && dealerBJ) {
+        message = "Beide Blackjack. Push.";
+        gameState.balance += gameState.currentBet;
+    } else if (p > 21) {
+        message = "Du hast überkauft.";
+    } else if (d > 21 || p > d) {
+        message = "Du gewinnst!";
+        gameState.balance += gameState.currentBet * 2;
+    } else if (p === d) {
+        message = "Unentschieden.";
+        gameState.balance += gameState.currentBet;
+    } else {
+        message = "Dealer gewinnt.";
+    }
+
+    updateBalance();
+    document.getElementById("message").textContent = message;
+    document.getElementById("betPrompt").textContent = "Was setzen Sie?";
+}
+
+/* ===== Render ===== */
 function render() {
     const playerDiv = document.getElementById("playerCards");
     const dealerDiv = document.getElementById("dealerCards");
 
-    playerDiv.innerHTML = "";
-    dealerDiv.innerHTML = "";
+    playerDiv.innerHTML = gameState.player.map(c => `<span class="card">${c.value}${c.suit}</span>`).join('');
+    dealerDiv.innerHTML = gameState.dealer.map((c,i) => 
+        i === 1 && !gameState.gameOver ? `<span class="hidden">?</span>` : `<span class="card">${c.value}${c.suit}</span>`
+    ).join('');
 
-    player.forEach(c => {
-        playerDiv.innerHTML += `<span class="card">${c.value}${c.suit}</span>`;
-    });
-
-    dealer.forEach((c,i) => {
-        if (i === 1 && !gameOver) {
-            dealerDiv.innerHTML += `<span class="hidden">?</span>`;
-        } else {
-            dealerDiv.innerHTML += `<span class="card">${c.value}${c.suit}</span>`;
-        }
-    });
-
-    document.getElementById("playerScore").textContent = calculateScore(player);
-    document.getElementById("dealerScore").textContent = gameOver ? calculateScore(dealer) : "?";
+    document.getElementById("playerScore").textContent = calculateScore(gameState.player);
+    document.getElementById("dealerScore").textContent = gameState.gameOver ? calculateScore(gameState.dealer) : "?";
 }
 
-function playerAction(action) {
-    if (gameOver) return;
-
-    giveStrategyFeedback(action);
-
-    if (action === "hit") {
-        dealCard(player);
-        canDouble = false;
-        if (calculateScore(player) > 21) checkWinner();
-    }
-
-    if (action === "stand") {
-        gameOver = true;
-        while (calculateScore(dealer) < 17) {
-            dealCard(dealer);
-        }
-        checkWinner();
-    }
-
-    if (action === "double" && canDouble) {
-        dealCard(player);
-        gameOver = true;
-        while (calculateScore(dealer) < 17) {
-            dealCard(dealer);
-        }
-        checkWinner();
-    }
-
-    render();
+function updateBalance() {
+    document.getElementById("balance").textContent = gameState.balance;
 }
-
-function checkWinner() {
-    const p = calculateScore(player);
-    const d = calculateScore(dealer);
-
-    if (p > 21) {
-        document.getElementById("message").textContent = "Du hast überkauft.";
-    } else if (d > 21) {
-        document.getElementById("message").textContent = "Dealer überkauft.";
-    } else if (p > d) {
-        document.getElementById("message").textContent = "Du gewinnst!";
-    } else if (p < d) {
-        document.getElementById("message").textContent = "Dealer gewinnt.";
-    } else {
-        document.getElementById("message").textContent = "Unentschieden.";
-    }
-}
-
-function newGame() {
-    createDeck();
-    shuffle();
-    player = [];
-    dealer = [];
-    gameOver = false;
-    canDouble = true;
-    document.getElementById("message").textContent = "";
-    document.getElementById("strategyFeedback").textContent = "";
-
-    dealCard(player);
-    dealCard(dealer);
-    dealCard(player);
-    dealCard(dealer);
-
-    render();
-}
-
-newGame();
 </script>
 
 </body>

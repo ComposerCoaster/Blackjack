@@ -7,11 +7,11 @@ body {
 }
 h1{
 	font-size: 48pt;
-	font-family: times new roman, sans serif;
+	font-family: courier new, sans serif;
 }
 
 h2{
-	font-family: Libertinus;
+	font-family: courier new, sans serif;
 }
 
 #table {
@@ -122,6 +122,10 @@ footer{
 	margin-left: 240px;
 	margin-right: 240px;
 	border-radius: 16px;
+}
+#h{
+	font-size: 24pt;
+	font-family: courier new, sans serif;
 }
 
 a{

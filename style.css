@@ -1,7 +1,7 @@
 body {
     font-family: helvetica, sans-serif;
    background-image: url("https://w0.peakpx.com/wallpaper/577/287/HD-wallpaper-blackjack-gambling-poker-21-chips-poker-chips.jpg");
-    background-size: 100%;
+    background-size: cover;
 	color: white;
     text-align: center;
 }
@@ -33,7 +33,7 @@ main{
 	margin-bottom: 20px;
 	margin-left: 240px;
 	float: left;
-	width: 45%;
+	width: 20%;
 }
 
 .cards {
@@ -106,28 +106,9 @@ aside{
 	margin-bottom: 20px;
 	margin-right:240px;
 	float: right;
-	width: 18%;
+	width: 10%;
 }
 
 #betPrompt{
 font-size: 24pt;
-}
-
-footer{
-	backdrop-filter: blur(10px);
-	border: 1px solid white;
-	padding:32px;
-	margin-top: 550px;
-	margin-bottom: 30px;
-	margin-left: 240px;
-	margin-right: 240px;
-	border-radius: 16px;
-}
-#h{
-	font-size: 24pt;
-	font-family: courier new, sans serif;
-}
-
-a{
-	color: white;
 }

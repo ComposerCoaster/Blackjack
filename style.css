@@ -121,6 +121,6 @@ footer{
 	margin-right: 120px;
 	width: 82%;
 	border-radius: 16px;
-	position: absolute;
+	position: 1000;
 	bottom: 0;
 }

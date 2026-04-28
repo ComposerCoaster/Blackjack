@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Slots Simulator</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+<h1>Slots</h1>
+</header>
+
+<main id="table">
+
+    <h2 id="betPrompt">Was setzen Sie?</h2>
+
+    <div id="slots" style="font-size: 50px; margin: 20px;">
+        🎰 🎰 🎰
+    </div>
+
+    <p id="message"></p>
+
+    <div class="buttons">
+        <button onclick="spin()" disabled>Spin</button>
+    </div>
+
+</main>
+
+<aside id="bettingArea">
+    <h3>Kontostand: <span id="balance">1000</span> $</h3>
+    <p>Geplanter Einsatz: <span id="pendingBet">0</span> $</p>
+
+    <button onclick="addBet(5)">+5 $</button>
+    <button onclick="addBet(10)">+10 $</button>
+    <button onclick="addBet(25)">+25 $</button>
+    <button onclick="addBet(100)">+100 $</button>
+    <button onclick="addBet(500)">+500 $</button>
+
+    <button onclick="allIn()">All-In</button>
+    <button onclick="confirmBet()">Bestätigen</button>
+</aside>
+
+<footer>
+
+<h2> Erklärung </h2>
+<br>
+<p> Mögliche Symbole: 🍒,🍋,⭐💎 </p>
+<p> Wenn 2 gleiche Symbole erdreht werden wird der Einsatz 1,5x zurückgegeben </p>
+<p> Wenn 3 gleiche Symbole erdreht werden, wird der einsatz 5x zurückgegeben </p>
+
+</footer>
+
+<script>
+
+const gameState = {
+    balance: 1000,
+    currentBet: 0,
+    pendingBet: 0,
+    canSpin: false
+};
+
+const symbols = ["🍒","🍋","⭐","💎"];
+
+const defaultSlots = "🎰 🎰 🎰";
+
+/* ===== Betting ===== */
+
+function addBet(amount) {
+    if (gameState.canSpin) return;
+    gameState.pendingBet += amount;
+    document.getElementById("pendingBet").textContent = gameState.pendingBet;
+}
+
+function allIn() {
+    if (gameState.canSpin) return;
+
+    if (gameState.balance <= 0) {
+        alert("All-In nicht möglich im Minus!");
+        return;
+    }
+
+    gameState.pendingBet = gameState.balance;
+    document.getElementById("pendingBet").textContent = gameState.pendingBet;
+}
+
+function confirmBet() {
+    if (gameState.pendingBet === 0) return;
+
+    gameState.currentBet = gameState.pendingBet;
+    gameState.balance -= gameState.currentBet;
+
+    gameState.pendingBet = 0;
+    updateBalance();
+
+    document.getElementById("pendingBet").textContent = "0";
+    document.getElementById("betPrompt").textContent =
+        "Einsatz: " + gameState.currentBet + " $";
+
+    gameState.canSpin = true;
+    document.querySelector(".buttons button").disabled = false;
+}
+
+/* ===== Spin ===== */
+
+function spin() {
+
+    if (!gameState.canSpin) return;
+
+    const a = randomSymbol();
+    const b = randomSymbol();
+    const c = randomSymbol();
+
+    document.getElementById("slots").textContent = a + " " + b + " " + c;
+
+    let message = "";
+
+    if (a === b && b === c) {
+        message = "Jackpot!";
+        gameState.balance += gameState.currentBet * 5;
+    }
+    else if (a === b || b === c || a === c) {
+        message = "Kleiner Gewinn!";
+        gameState.balance += gameState.currentBet * 3 / 2;
+    }
+    else {
+        message = "Verloren.";
+    }
+
+    updateBalance();
+
+    if (gameState.balance < -100) {
+        document.getElementById("message").textContent =
+        "Sie sind über 100$ im Minus. Spiel verloren.";
+        disableGame();
+        return;
+    }
+
+    document.getElementById("message").textContent = message;
+
+    gameState.canSpin = false;
+    document.querySelector(".buttons button").disabled = true;
+    document.getElementById("betPrompt").textContent = "Was setzen Sie?";
+	
+	// nach kurzer Zeit zurücksetzen
+setTimeout(() => {
+    document.getElementById("slots").textContent = defaultSlots;
+}, 1200);
+}
+
+/* ===== Helpers ===== */
+
+function randomSymbol() {
+    return symbols[Math.floor(Math.random() * symbols.length)];
+}
+
+function updateBalance() {
+    document.getElementById("balance").textContent = gameState.balance;
+}
+
+function disableGame() {
+    document.querySelector(".buttons button").disabled = true;
+    document.querySelectorAll("#bettingArea button")
+        .forEach(btn => btn.disabled = true);
+}
+
+</script>
+
+</body>
+</html>

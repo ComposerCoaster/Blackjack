@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Crash Game Simulator</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+<h1>Crash Game</h1>
+</header>
+
+<main id="table">
+
+<h2 id="betPrompt">Setze deinen Einsatz</h2>
+
+<div style="font-size: 60px; margin: 20px;">
+<span id="multiplier">x1.00</span>
+</div>
+
+<p id="status">Bereit</p>
+<p id="message"></p>
+
+<div class="buttons">
+<button onclick="startGame()" disabled>Start</button>
+<button onclick="cashout()" disabled>Cashout</button>
+</div>
+
+</main>
+
+<aside id="bettingArea">
+
+<h3>Kontostand: <span id="balance">1000</span> $</h3>
+
+<p>Geplanter Einsatz: <span id="pendingBet">0</span> $</p>
+
+<button onclick="addBet(5)">+5</button>
+<button onclick="addBet(10)">+10</button>
+<button onclick="addBet(25)">+25</button>
+<button onclick="addBet(100)">+100</button>
+
+<button onclick="allIn()">All-In</button>
+<button onclick="confirmBet()">Bestätigen</button>
+
+</aside>
+
+<script>
+
+const gameState = {
+    balance: 1000,
+    pendingBet: 0,
+    bet: 0,
+    multiplier: 1.0,
+    interval: null,
+    running: false,
+    cashedOut: false
+};
+
+/* ===== Betting ===== */
+
+function addBet(amount) {
+    if (gameState.running) return;
+    gameState.pendingBet += amount;
+    document.getElementById("pendingBet").textContent = gameState.pendingBet;
+}
+
+function allIn() {
+    if (gameState.running) return;
+    gameState.pendingBet = gameState.balance;
+    document.getElementById("pendingBet").textContent = gameState.pendingBet;
+}
+
+function confirmBet() {
+
+    if (gameState.pendingBet <= 0) return;
+
+    gameState.bet = gameState.pendingBet;
+    gameState.balance -= gameState.bet;
+    gameState.pendingBet = 0;
+
+    updateBalance();
+
+    document.getElementById("pendingBet").textContent = "0";
+    document.getElementById("betPrompt").textContent =
+        "Einsatz: " + gameState.bet + " $";
+
+    document.querySelector(".buttons button").disabled = false;
+}
+
+/* ===== Game Logic ===== */
+
+function startGame() {
+
+    if (gameState.bet <= 0) return;
+
+    gameState.multiplier = 1.0;
+    gameState.running = true;
+    gameState.cashedOut = false;
+
+    document.getElementById("status").textContent = "Läuft...";
+    document.getElementById("message").textContent = "";
+
+    document.querySelectorAll(".buttons button")[0].disabled = true;
+    document.querySelectorAll(".buttons button")[1].disabled = false;
+
+    let crashPoint = generateCrashPoint();
+
+    gameState.interval = setInterval(() => {
+
+        gameState.multiplier += 0.02;
+        document.getElementById("multiplier").textContent =
+            "x" + gameState.multiplier.toFixed(2);
+
+        // Crash check
+        if (gameState.multiplier >= crashPoint) {
+            crash();
+        }
+
+    }, 100);
+}
+
+function generateCrashPoint() {
+
+    let r = Math.random();
+
+    // 55%: sehr frühe Crashes
+    if (r < 0.55) return 1.01 + Math.random() * 0.7; // 1.01–1.71
+
+    // 35%: normale Runden
+    if (r < 0.90) return 1.7 + Math.random() * 2.3;  // 1.7–4.0
+
+    // 9%: gute Runs
+    if (r < 0.99) return 4 + Math.random() * 6;      // 4–10
+
+    // 1%: extreme Runs
+    return 10 + Math.random() * 20;                  // 10–30
+}
+
+function cashout() {
+
+    if (!gameState.running || gameState.cashedOut) return;
+
+    gameState.cashedOut = true;
+
+    let win = gameState.bet * gameState.multiplier;
+
+// auf 5er Schritte abrunden
+win = Math.floor(win / 5) * 5;
+
+gameState.balance += win;
+
+    document.getElementById("message").textContent =
+        "Cashout bei x" + gameState.multiplier.toFixed(2) +
+        " → +" + win.toFixed(2) + "$";
+
+    endRound();
+}
+
+function crash() {
+
+    clearInterval(gameState.interval);
+    gameState.running = false;
+
+    document.getElementById("status").textContent = "CRASH!";
+
+    if (!gameState.cashedOut) {
+        document.getElementById("message").textContent =
+            "Du hast verloren!";
+    }
+
+    endRound();
+}
+
+/* ===== Reset ===== */
+
+function endRound() {
+
+    clearInterval(gameState.interval);
+
+    gameState.running = false;
+    gameState.bet = 0;
+    gameState.multiplier = 1.0;
+
+    document.getElementById("multiplier").textContent = "x1.00";
+    document.getElementById("betPrompt").textContent = "Setze deinen Einsatz";
+
+    document.querySelectorAll(".buttons button")[0].disabled = true;
+    document.querySelectorAll(".buttons button")[1].disabled = true;
+
+    updateBalance();
+
+    if (gameState.balance < -100) {
+        document.getElementById("message").textContent =
+            "Sie sind über 100$ im Minus. Spiel verloren.";
+        disableGame();
+    }
+}
+
+function updateBalance() {
+    document.getElementById("balance").textContent = gameState.balance;
+}
+
+function disableGame() {
+    document.querySelectorAll("button").forEach(b => b.disabled = true);
+}
+
+</script>
+
+</body>
+</html>

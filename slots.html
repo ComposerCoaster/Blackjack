@@ -45,8 +45,8 @@
 
 <h2> Erklärung </h2>
 <br>
-<p> Mögliche Symbole: 🍒🍋⭐💎 </p>
-<p> Wenn 2 gleiche Symbole erdreht werden wird der Einsatz 1,2x zurückgegeben </p>
+<p> Mögliche Symbole: 🍒 🍋 ⭐ 💎 </p>
+<p> Wenn 2 gleiche Symbole erdreht werden wird der Einsatz 1,5x zurückgegeben </p>
 <p> Wenn 3 gleiche Symbole erdreht werden, wird der einsatz 3x zurückgegeben </p>
 
 </footer>
@@ -121,7 +121,7 @@ function spin() {
     }
     else if (a === b || b === c || a === c) {
         message = "Kleiner Gewinn!";
-        gameState.balance += gameState.currentBet * 6 / 5;
+        gameState.balance += gameState.currentBet * 3 / 2;
     }
     else {
         message = "Verloren.";

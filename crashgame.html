@@ -39,6 +39,7 @@
 <button onclick="addBet(25)">+25 $</button>
 <button onclick="addBet(100)">+100 $</button>
 <button onclick="addBet(500)">+500 $</button>
+<button onclick="addBet(1000)">+1000 $</button>
 
 <button onclick="allIn()">All-In</button>
 <button onclick="confirmBet()">Bestätigen</button>
@@ -125,7 +126,7 @@ function generateCrashPoint() {
     let r = Math.random();
 
     // 55%: sehr frühe Crashes
-    if (r < 0.55) return 1.01 + Math.random() * 0.7; // 1.01–1.71
+    if (r < 0.55) return 1.1 + Math.random() * 0.7; // 1.01–1.71
 
     // 35%: normale Runden
     if (r < 0.90) return 1.7 + Math.random() * 2.3;  // 1.7–4.0

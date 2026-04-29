@@ -34,6 +34,7 @@ main{
 	margin-left: 120px;
 	float: left;
 	width: 35%;
+	box-shadow: : 0px 2px 5px black;
 }
 
 #haupt{
@@ -75,6 +76,7 @@ button {
     border-radius: 6px;
     border: none;
     cursor: pointer;
+	box-shadow: : 0px 2px 5px black;
 }
 
 button:hover {
@@ -94,6 +96,7 @@ header{
 	margin-left: 120px;
 	margin-right: 120px;
 	border-radius: 16px;
+	box-shadow: : 0px 2px 5px black;
 }
 
 aside{
@@ -107,6 +110,7 @@ aside{
 	margin-right:120px;
 	float: right;
 	width: 20%;
+	box-shadow: : 0px 2px 5px black;
 }
 
 #betPrompt{
@@ -122,4 +126,5 @@ footer{
 	margin-top: 600px;
 	width: 82%;
 	border-radius: 16px;
+	box-shadow: : 0px 2px 5px black;
 }

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Mines Game</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Mines</h1>
+
+<p>Kontostand: <span id="balance">1000</span> $</p>
+<p>Einsatz: <input type="number" id="bet" value="100"></p>
+<p>Minen: <input type="number" id="mineCount" value="3" min="1" max="24"></p>
+
+<button onclick="startGame()">Start</button>
+<button onclick="cashout()">Cashout</button>
+
+<p>Multiplikator: <span id="multiplier">1.00</span></p>
+<p id="message"></p>
+
+<div id="grid"></div>
+
+<script>
+
+let game = {
+    grid: [],
+    mines: [],
+    revealed: 0,
+    active: false,
+    bet: 0,
+    multiplier: 1
+};
+
+function startGame() {
+    const gridDiv = document.getElementById("grid");
+    gridDiv.innerHTML = "";
+
+    game.grid = [];
+    game.mines = [];
+    game.revealed = 0;
+    game.multiplier = 1;
+    game.active = true;
+
+    game.bet = parseInt(document.getElementById("bet").value);
+    let mineCount = parseInt(document.getElementById("mineCount").value);
+
+    let balance = getBalance();
+    balance -= game.bet;
+    setBalance(balance);
+
+    while (game.mines.length < mineCount) {
+        let pos = Math.floor(Math.random() * 25);
+        if (!game.mines.includes(pos)) game.mines.push(pos);
+    }
+
+    for (let i = 0; i < 25; i++) {
+        const btn = document.createElement("button");
+        btn.className = "cell";
+        btn.onclick = () => reveal(i, btn);
+        gridDiv.appendChild(btn);
+    }
+
+    updateMultiplier();
+    document.getElementById("message").textContent = "";
+}
+
+function reveal(index, btn) {
+    if (!game.active || btn.classList.contains("revealed")) return;
+
+    if (game.mines.includes(index)) {
+        btn.classList.add("mine");
+        btn.textContent = "💣";
+        endGame();
+        return;
+    }
+
+    btn.classList.add("revealed");
+    btn.textContent = "💎";
+
+    game.revealed++;
+    updateMultiplier();
+}
+
+function updateMultiplier() {
+    let mineCount = parseInt(document.getElementById("mineCount").value);
+    let total = 25;
+
+    game.multiplier = (total / (total - mineCount - game.revealed)) * 0.95;
+
+    document.getElementById("multiplier").textContent =
+        game.multiplier.toFixed(2);
+}
+
+function cashout() {
+    if (!game.active) return;
+
+    let win = game.bet * game.multiplier;
+    setBalance(getBalance() + win);
+
+    document.getElementById("message").textContent =
+        "Ausgezahlt: " + win.toFixed(2) + "$";
+
+    game.active = false;
+}
+
+function endGame() {
+    game.active = false;
+
+    document.getElementById("message").textContent =
+        "💥 Mine getroffen!";
+
+    const cells = document.querySelectorAll(".cell");
+    game.mines.forEach(i => {
+        cells[i].classList.add("mine");
+        cells[i].textContent = "💣";
+    });
+}
+
+function getBalance() {
+    return parseFloat(document.getElementById("balance").textContent);
+}
+
+function setBalance(val) {
+    document.getElementById("balance").textContent = val.toFixed(2);
+}
+
+</script>
+
+</body>
+</html>

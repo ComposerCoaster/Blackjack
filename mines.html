@@ -2,73 +2,106 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mines Game</title>
+<title>Mines</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<header>
 <h1>Mines</h1>
+</header>
 
-<p>Kontostand: <span id="balance">1000</span> $</p>
-<p>Einsatz: <input type="number" id="bet" value="100"></p>
-<p>Minen: <input type="number" id="mineCount" value="3" min="1" max="24"></p>
+<main id="table">
 
-<button onclick="startGame()">Start</button>
-<button onclick="cashout()">Cashout</button>
+<h2 id="betPrompt">Mines Game</h2>
 
+<p>Einsatz: <span id="currentBet">0</span> $</p>
 <p>Multiplikator: <span id="multiplier">1.00</span></p>
-<p id="message"></p>
 
 <div id="grid"></div>
+
+<p id="message"></p>
+
+<div class="buttons">
+    <button onclick="cashout()" disabled id="cashoutBtn">Cashout</button>
+</div>
+
+</main>
+
+<aside id="bettingArea">
+
+<h3>Kontostand: <span id="balance">1000</span> $</h3>
+<p>Geplanter Einsatz: <span id="pendingBet">0</span> $</p>
+
+<button onclick="addBet(10)">+10 $</button>
+<button onclick="addBet(25)">+25 $</button>
+<button onclick="addBet(100)">+100 $</button>
+<button onclick="addBet(500)">+500 $</button>
+<button onclick="addBet(1000)">+1000 $</button>
+
+<button onclick="allIn()">All-In</button>
+<button onclick="confirmBet()">Bestätigen</button>
+
+</aside>
 
 <script>
 
 let game = {
-    grid: [],
     mines: [],
-    revealed: 0,
     active: false,
     bet: 0,
-    multiplier: 1
+    multiplier: 1,
+    revealed: 0,
+    pendingBet: 0
 };
 
-function startGame() {
-    const gridDiv = document.getElementById("grid");
-    gridDiv.innerHTML = "";
+let gameLocked = false;
 
-    game.grid = [];
-    game.mines = [];
-    game.revealed = 0;
-    game.multiplier = 1;
-    game.active = true;
+/* ---------- GRID ---------- */
 
-    game.bet = parseInt(document.getElementById("bet").value);
-    let mineCount = parseInt(document.getElementById("mineCount").value);
-
-    let balance = getBalance();
-    balance -= game.bet;
-    setBalance(balance);
-
-    while (game.mines.length < mineCount) {
-        let pos = Math.floor(Math.random() * 25);
-        if (!game.mines.includes(pos)) game.mines.push(pos);
-    }
+function createGrid() {
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
 
     for (let i = 0; i < 25; i++) {
         const btn = document.createElement("button");
         btn.className = "cell";
-        btn.onclick = () => reveal(i, btn);
-        gridDiv.appendChild(btn);
+        btn.onclick = () => clickCell(i, btn);
+        grid.appendChild(btn);
     }
-
-    updateMultiplier();
-    document.getElementById("message").textContent = "";
 }
 
-function reveal(index, btn) {
-    if (!game.active || btn.classList.contains("revealed")) return;
+/* ---------- GAME START ---------- */
 
-    if (game.mines.includes(index)) {
+function startGame() {
+    if (gameLocked) return;
+
+    game.active = true;
+    game.revealed = 0;
+    game.multiplier = 1;
+
+    let mineCount = 5;
+
+    game.mines = [];
+    while (game.mines.length < mineCount) {
+        let r = Math.floor(Math.random() * 25);
+        if (!game.mines.includes(r)) game.mines.push(r);
+    }
+
+    createGrid();
+
+    document.getElementById("message").textContent = "";
+    document.getElementById("cashoutBtn").disabled = false;
+
+    updateUI();
+}
+
+/* ---------- GAMEPLAY ---------- */
+
+function clickCell(i, btn) {
+    if (gameLocked || !game.active || btn.classList.contains("revealed")) return;
+
+    if (game.mines.includes(i)) {
         btn.classList.add("mine");
         btn.textContent = "💣";
         endGame();
@@ -83,47 +116,117 @@ function reveal(index, btn) {
 }
 
 function updateMultiplier() {
-    let mineCount = parseInt(document.getElementById("mineCount").value);
-    let total = 25;
-
-    game.multiplier = (total / (total - mineCount - game.revealed)) * 0.95;
+    game.multiplier = Math.pow(1.18, game.revealed) * 0.92;
 
     document.getElementById("multiplier").textContent =
         game.multiplier.toFixed(2);
 }
 
+/* ---------- CASHOUT ---------- */
+
 function cashout() {
-    if (!game.active) return;
+    if (gameLocked || !game.active) return;
 
     let win = game.bet * game.multiplier;
-    setBalance(getBalance() + win);
 
-    document.getElementById("message").textContent =
-        "Ausgezahlt: " + win.toFixed(2) + "$";
+    setBalance(Math.floor(getBalance() + win));
 
     game.active = false;
+    document.getElementById("cashoutBtn").disabled = true;
+
+    document.getElementById("message").textContent =
+        "Gewinn: " + Math.floor(win) + "$";
+
+    checkLossLimit();
 }
+
+/* ---------- END GAME ---------- */
 
 function endGame() {
     game.active = false;
+    document.getElementById("cashoutBtn").disabled = true;
 
     document.getElementById("message").textContent =
         "💥 Mine getroffen!";
 
-    const cells = document.querySelectorAll(".cell");
-    game.mines.forEach(i => {
-        cells[i].classList.add("mine");
-        cells[i].textContent = "💣";
-    });
+    checkLossLimit();
 }
+
+/* ---------- BET SYSTEM ---------- */
+
+function addBet(a) {
+    if (gameLocked || game.active) return;
+
+    game.pendingBet += a;
+    document.getElementById("pendingBet").textContent = game.pendingBet;
+}
+
+function allIn() {
+    if (gameLocked || game.active) return;
+
+    game.pendingBet = getBalance();
+    document.getElementById("pendingBet").textContent = game.pendingBet;
+}
+
+function confirmBet() {
+    if (gameLocked || game.active || game.pendingBet <= 0) return;
+
+    game.bet = game.pendingBet;
+    setBalance(getBalance() - game.bet);
+
+    document.getElementById("currentBet").textContent = game.bet;
+    document.getElementById("pendingBet").textContent = 0;
+
+    game.pendingBet = 0;
+
+    startGame();
+}
+
+/* ---------- BALANCE ---------- */
 
 function getBalance() {
     return parseFloat(document.getElementById("balance").textContent);
 }
 
-function setBalance(val) {
-    document.getElementById("balance").textContent = val.toFixed(2);
+function setBalance(v) {
+    document.getElementById("balance").textContent = Math.floor(v);
 }
+
+function updateUI() {
+    document.getElementById("currentBet").textContent = game.bet;
+}
+
+/* ---------- LOSS LIMIT SYSTEM ---------- */
+
+function checkLossLimit() {
+    let balance = getBalance();
+
+    if (balance < -100) {
+        document.getElementById("message").textContent =
+            "Du bist über 100$ im Minus. Spiel verloren.";
+
+        lockGame();
+        return true;
+    }
+    return false;
+}
+
+function lockGame() {
+    gameLocked = true;
+    game.active = false;
+
+    document.getElementById("cashoutBtn").disabled = true;
+
+    let cells = document.querySelectorAll(".cell");
+    cells.forEach(c => {
+        c.disabled = true;
+        c.onclick = null;
+    });
+}
+
+/* ---------- INIT ---------- */
+
+createGrid();
 
 </script>
 

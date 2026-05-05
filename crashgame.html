@@ -125,17 +125,18 @@ function generateCrashPoint() {
 
     let r = Math.random();
 
-    // 55%: sehr frühe Crashes
-    if (r < 0.55) return 1.1 + Math.random() * 0.7; // 1.01–1.71
+    // 🎯 20%: Crash unter 1.15
+    if (r < 0.20) {
+        return 1.01 + Math.random() * 0.14; // 1.01–1.15
+    }
 
-    // 35%: normale Runden
-    if (r < 0.90) return 1.7 + Math.random() * 2.3;  // 1.7–4.0
+    // restliche 80% neu skalieren
+    r = (r - 0.20) / 0.80;
 
-    // 9%: gute Runs
-    if (r < 0.99) return 4 + Math.random() * 6;      // 4–10
-
-    // 1%: extreme Runs
-    return 10 + Math.random() * 20;                  // 10–30
+    if (r < 0.50) return 1.15 + Math.random() * 0.6;
+    if (r < 0.85) return 1.75 + Math.random() * 2.25;
+    if (r < 0.99) return 4 + Math.random() * 6;
+    return 10 + Math.random() * 20;
 }
 
 function cashout() {

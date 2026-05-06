@@ -2,6 +2,8 @@ body {
     font-family: helvetica, sans-serif;
    background-image: url("https://w0.peakpx.com/wallpaper/577/287/HD-wallpaper-blackjack-gambling-poker-21-chips-poker-chips.jpg");
     background-size: cover;
+	background-repeat: no-repeat;
+	background-attachment: fixed;
 	color: white;
     text-align: center;
 	text-shadow: 0px 1px 3px black;
